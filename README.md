@@ -1,4 +1,4 @@
-# like lion assignment
+# Like Lion Assignment
 
 ## week7
 - JWT이용 검증
