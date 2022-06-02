@@ -1,1 +1,3 @@
-# like lion 4week
+# like lion homework
+
+## week7 complete
