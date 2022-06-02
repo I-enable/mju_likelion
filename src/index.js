@@ -1,7 +1,8 @@
 import express from "express";
 import api from "./api";
+import dotenv from 'dotenv';
 
-
+dotenv.config();
 const app = express();
 const port = 3000;
 

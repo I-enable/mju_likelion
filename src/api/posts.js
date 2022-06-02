@@ -2,37 +2,56 @@ import express from "express";
 import { General } from '../../models';
 import { User } from '../../models';
 import bcrypt from 'bcrypt';
-
+import { sign } from 'jsonwebtoken';
+import { verifyToken } from "./middlewares";
 
 const app = express();
 
-// 로그인 (완성)
+// 로그인
 app.post('/auth/login', async (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const loginCheck = await User.findAll({
-    where: {
-      email,
-      password
-    }
+    where: { email }
   });
-  console.log(loginCheck); // 이거 왜안되냐
   if (loginCheck.length === 0) {
     return res.json({
       error: "User not exist"
     });
   }
-  res.json({
-    data: {
-      user: {
-        id: loginCheck[0].id
-      }
+  
+  else if (loginCheck[0]) {
+    const same = bcrypt.compareSync(password, loginCheck[0].password);
+    if (same) {
+      const token = sign(
+        {
+          id: loginCheck[0].id,
+          email: loginCheck[0].email
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "10m",
+          issuer: "developer"
+        }
+      );
+      return res.json({
+        code: 200,
+        message: "토큰이 발급되었습니다. 단 10분",
+        token,
+      });
+
+    
     }
-  });
+    else {
+      return res.json({
+        error: "Passwords do not match"
+      });
+    }
+  }
 });
 
 
-// 회원가입 (완성)
+// 회원가입
 app.post('/auth/register', async (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -47,14 +66,14 @@ app.post('/auth/register', async (req, res) => {
   }
   // 단방향 암호화 후 DB추가
   let byPassword = await bcrypt.hash(password, 1);
-  const New = await User.create({
+  const newUser = await User.create({
     email: email,
     password: byPassword,
   });
   res.json({
     data: {
       user: {
-        id: New.id,
+        id: newUser.id,
       }
     }
   });
@@ -94,29 +113,28 @@ app.get('/:postId', async (req, res) => {
 
 
 // 글 생성(POST) (완료)
-app.post('/', (req, res) => {
+app.post('/', verifyToken, (req, res) => {
   const { content } = req.body;
-  const writer = req.header("X-User-Id");
-
+  const writer = req.decode.id;
   General.create({
     content: content,
-    writer: parseInt(writer),
+    writer: writer,
   });
 
   return res.json({
     data: {
       post: {
-        id: parseInt(writer)
+        id: writer
       }
     }
   })
 });
 
 // 특정 글 수정(PUT) (완료)
-app.put('/:postId', async (req, res) => {
+app.put('/:postId', verifyToken, async (req, res) => {
   const { postId } = req.params;
   const { content } = req.body;
-  const writer = req.header("X-User-Id");
+  const writer = req.decode.id;
 
   const generalDatas = await General.findAll({
     where: {
@@ -143,9 +161,9 @@ app.put('/:postId', async (req, res) => {
 });
 
 // 특정 글 삭제(DELETE) (완료)
-app.delete('/:postId', async (req, res) => {
+app.delete('/:postId', verifyToken, async (req, res) => {
   const { postId } = req.params;
-  const writer = req.header("X-User-Id");
+  const writer = req.decode.id;
 
   const generalDatas = await General.findAll({
     where: {
