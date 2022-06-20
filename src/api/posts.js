@@ -79,21 +79,9 @@ app.post('/auth/register', async (req, res) => {
   });
 });
 
-// 글 목록 조회 (완성)
-app.get('/', async (req, res) => {
-	const generalDatas = await General.findAll({});
-  if (generalDatas.length === 0) {
-    return res.json({
-      data : []
-    })
-  }
-	res.json({
-		data: generalDatas
-	});
-});
-
 // 글 개별 항목 조회(GET) (완료)
-app.get('/:postId', async (req, res) => {  
+app.get('/:postId', async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3001/api/posts");
     const { postId } = req.params;
     const generalDatas = await General.findAll({
       where: {
@@ -108,7 +96,21 @@ app.get('/:postId', async (req, res) => {
     res.json({
       data: generalDatas
     });
-  });
+});
+
+// 글 목록 조회 (완성)
+app.get('/', async (req, res) => {
+	const generalDatas = await General.findAll({});
+  if (generalDatas.length === 0) {
+    return res.json({
+      data : []
+    })
+  }
+	res.json({
+		data: generalDatas
+	});
+});
+
 
 
 
